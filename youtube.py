@@ -19,28 +19,29 @@ def retrieveData(key,clickTrackingParams,continuation):
 
     data = response.json()['onResponseReceivedActions'][0]['appendContinuationItemsAction']['continuationItems']
 
-    for datum in data:
-        try:
-            print("Video ID:",datum['gridVideoRenderer']['videoId'],"-",datum['gridVideoRenderer']['title']['runs'][0]['text'],"-",datum['gridVideoRenderer']['publishedTimeText']['simpleText'],"-",datum['gridVideoRenderer']['viewCountText']['simpleText'])
-            with open('youtube.csv','a',newline='',encoding="utf-8") as csv_file:
-                writer = csv.writer(csv_file, delimiter=',')
-                writer.writerow([datum['gridVideoRenderer']['videoId'], datum['gridVideoRenderer']['title']['runs'][0]['text'], datum['gridVideoRenderer']['publishedTimeText']['simpleText'], datum['gridVideoRenderer']['viewCountText']['simpleText'], date.today()])
-        except:
-            print("error")
-        
-    next_continuation = data[30]['continuationItemRenderer']['continuationEndpoint']
+    for datum in data[:-1]:
+       
+        print("Video ID:",datum['gridVideoRenderer']['videoId'],"-",datum['gridVideoRenderer']['title']['runs'][0]['text'],"-",datum['gridVideoRenderer']['publishedTimeText']['simpleText'],"-",datum['gridVideoRenderer']['viewCountText']['simpleText'])
+        with open(channel+'.csv','a',newline='',encoding="utf-8") as csv_file:
+            writer = csv.writer(csv_file, delimiter=',')
+            writer.writerow([datum['gridVideoRenderer']['videoId'], datum['gridVideoRenderer']['title']['runs'][0]['text'], datum['gridVideoRenderer']['publishedTimeText']['simpleText'], datum['gridVideoRenderer']['viewCountText']['simpleText'], date.today()])
 
-    clickTrackingParams_new = next_continuation['clickTrackingParams']
-    continuation_new = next_continuation['continuationCommand']['token']
+    try:    
+        next_continuation = data[30]['continuationItemRenderer']['continuationEndpoint']
 
-    print("clickTrancking:",clickTrackingParams_new)
-    print("continuation:",continuation_new)
+        clickTrackingParams_new = next_continuation['clickTrackingParams']
+        continuation_new = next_continuation['continuationCommand']['token']
 
-    retrieveData(key,clickTrackingParams_new,continuation_new)
+        print("clickTrancking:",clickTrackingParams_new)
+        print("continuation:",continuation_new)
+
+        retrieveData(key,clickTrackingParams_new,continuation_new)
+    except:
+        print("Last Data")
 
     return 0
 
-channel = "RockyGerungOfficial2021"
+channel = "AdiHidayatOfficial"
 url = "https://www.youtube.com/c/"+channel+"/videos"
 
 headers = {
@@ -62,12 +63,14 @@ continueation_token = response.text.split('"continuationCommand":{"token":"')[1]
 data_main = json.loads(response.text.split('var ytInitialData = ')[1].split(';')[0])
 data=data_main['contents']['twoColumnBrowseResultsRenderer']['tabs'][1]['tabRenderer']['content']['sectionListRenderer']['contents'][0]['itemSectionRenderer']['contents'][0]['gridRenderer']['items']
 
-for datum in data:
-    
-    print("Video ID:",datum['gridVideoRenderer']['videoId'],"-",datum['gridVideoRenderer']['title']['runs'][0]['text'],"-",datum['gridVideoRenderer']['publishedTimeText']['simpleText'],"-",datum['gridVideoRenderer']['viewCountText']['simpleText'])
-    with open(channel+'.csv','a',newline='', encoding="utf-8") as csv_file:
-        writer = csv.writer(csv_file, delimiter=',')
-        writer.writerow([datum['gridVideoRenderer']['videoId'], datum['gridVideoRenderer']['title']['runs'][0]['text'], datum['gridVideoRenderer']['publishedTimeText']['simpleText'], datum['gridVideoRenderer']['viewCountText']['simpleText'], date.today()])
+print("len",len(data))
+for i,datum in enumerate(data[:-1]):
+    print (i)
+    if "publishedTimeText" in datum['gridVideoRenderer']:
+        print("Video ID:",datum['gridVideoRenderer']['videoId'],"-",datum['gridVideoRenderer']['title']['runs'][0]['text'],"-",datum['gridVideoRenderer']['publishedTimeText']['simpleText'],"-",datum['gridVideoRenderer']['viewCountText']['simpleText'])
+        with open(channel+'.csv','a',newline='', encoding="utf-8") as csv_file:
+            writer = csv.writer(csv_file, delimiter=',')
+            writer.writerow([datum['gridVideoRenderer']['videoId'], datum['gridVideoRenderer']['title']['runs'][0]['text'], datum['gridVideoRenderer']['publishedTimeText']['simpleText'], datum['gridVideoRenderer']['viewCountText']['simpleText'], date.today()])
 
 
 next_continuation = data[30]['continuationItemRenderer']['continuationEndpoint']

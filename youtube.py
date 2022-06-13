@@ -4,7 +4,7 @@ import csv
 from datetime import date
 
 
-def retrieveData(key,clickTrackingParams,continuation):
+def retrieveData(channel, key,clickTrackingParams,continuation):
 
     url = "https://www.youtube.com/youtubei/v1/browse"
 
@@ -27,7 +27,7 @@ def retrieveData(key,clickTrackingParams,continuation):
             writer.writerow([datum['gridVideoRenderer']['videoId'], datum['gridVideoRenderer']['title']['runs'][0]['text'], datum['gridVideoRenderer']['publishedTimeText']['simpleText'], datum['gridVideoRenderer']['viewCountText']['simpleText'], date.today()])
 
     try:    
-        next_continuation = data[30]['continuationItemRenderer']['continuationEndpoint']
+        next_continuation = data[len(data)-1]['continuationItemRenderer']['continuationEndpoint']
 
         clickTrackingParams_new = next_continuation['clickTrackingParams']
         continuation_new = next_continuation['continuationCommand']['token']
@@ -35,11 +35,95 @@ def retrieveData(key,clickTrackingParams,continuation):
         print("clickTrancking:",clickTrackingParams_new)
         print("continuation:",continuation_new)
 
-        retrieveData(key,clickTrackingParams_new,continuation_new)
+        retrieveData(channel, key,clickTrackingParams_new,continuation_new)
     except:
         print("Last Data")
 
     return 0
+
+def goToVideo(key):
+    url='https://www.youtube.com/watch?v='+key
+
+    headers={}
+
+    response = requests.request("GET", url, headers=headers)
+    
+    INNERTUBE_API_KEY = response.text.split('INNERTUBE_API_KEY')[1].split('":"')[1].split('","')[0]
+
+    continuation = response.text.split('"token":"')[1].split('","')[0]
+
+    print (INNERTUBE_API_KEY)
+    print (continuation)
+
+def getComment(isFirst:bool,key, continuation):
+    url='https://www.youtube.com/youtubei/v1/next?key='+key+'&prettyPrint=false'
+    payload = json.dumps({
+    "context": {
+        "client": {
+        "hl": "en",
+        "gl": "ID",
+        "remoteHost": "114.125.250.52",
+        "deviceMake": "",
+        "deviceModel": "",
+        "visitorData": "Cgs5MzJ0a3Z5T2RkYyiGpZ2VBg%3D%3D",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0,gzip(gfe)",
+        "clientName": "WEB",
+        "clientVersion": "2.20220609.00.00",
+        "osName": "Windows",
+        "osVersion": "10.0",
+        "screenPixelDensity": 2,
+        "platform": "DESKTOP",
+        "clientFormFactor": "UNKNOWN_FORM_FACTOR",
+        "configInfo": {
+            "appInstallData": "CIalnZUGEJje_RIQmIeuBRCUj64FENSDrgUQuIuuBRC3y60FEIKOrgUQmOqtBRD_ja4FEJH4_BIQ2L6tBQ%3D%3D"
+        },
+        "screenDensityFloat": 1.5,
+        "userInterfaceTheme": "USER_INTERFACE_THEME_DARK",
+        "timeZone": "Asia/Jakarta",
+        "browserName": "Firefox",
+        "browserVersion": "100.0",
+        "screenWidthPoints": 1280,
+        "screenHeightPoints": 337,
+        "utcOffsetMinutes": 420,
+        "mainAppWebInfo": {
+            "webDisplayMode": "WEB_DISPLAY_MODE_BROWSER",
+            "isWebNativeShareAvailable": False
+        }
+        },
+        "user": {
+        "lockedSafetyMode": False
+        },
+        "request": {
+        "useSsl": True,
+        "internalExperimentFlags": [],
+        "consistencyTokenJars": []
+        }
+    },
+    "continuation": continuation
+    })
+    headers = {
+    'Content-Type': 'application/json'
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+    if(isFirst):
+        data = response.json()['onResponseReceivedEndpoints'][1]['reloadContinuationItemsCommand']['continuationItems']
+    else:
+        data = response.json()['onResponseReceivedEndpoints'][0]['appendContinuationItemsAction']['continuationItems']
+
+    # print(data)
+
+    for datum in data[:-1]:
+        comment=datum['commentThreadRenderer']['comment']['commentRenderer']
+        author = comment['authorText']['simpleText']
+        textComment = comment['contentText']['runs']
+
+        print(author)
+        # print(textComment)
+
+    print(data[len(data)-1]['continuationItemRenderer']['continuationEndpoint']['continuationCommand']['token'])
+
 
 channel = "AdiHidayatOfficial"
 url = "https://www.youtube.com/c/"+channel+"/videos"
@@ -80,6 +164,15 @@ continuation = next_continuation['continuationCommand']['token']
 
 print("clickTracking:", clickTrackingParams)
 print("continuation:", continuation)
-retrieveData(key,clickTrackingParams,continuation)
+retrieveData(channel,key,clickTrackingParams,continuation)
+
+# goToVideo('jHS4ShVFjEY')
+
+# getComment(True,'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8','Eg0SC2pIUzRTaFZGakVZGAYyJSIRIgtqSFM0U2hWRmpFWTAAeAJCEGNvbW1lbnRzLXNlY3Rpb24%3D')
+
+# getComment(False,'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8','Eg0SC2pIUzRTaFZGakVZGAYy4AIKtgJnZXRfcmFua2VkX3N0cmVhbXMtLUNxWUJDSUFFRlJlMzBUZ2Ftd0VLbGdFSTJGOFFnQVFZQnlLTEFmdnRsMGQ3dngwWF9lSlV2MFFGSHlPVTZSV2ZvYUZwbTlIS0JHVGRUOFpSWnNySk1zMDFDSUtsWnliYXgtQmdlMmExU25DVG5WaXAzeWktZFJ6WUNtSld0U3RrcG5FWTNVMWlTLTlhcEpnX3VPR3hLNXhYWHBCZjlxVHptaWxlRjVrU0dmTEVqcWdLRGdVeEdtM0sxSDNOZGRVeUxESFVoVkU0ZTlJVUNZVzIyOEtDRmM1RFRmb0dPQU1RRkJJRkNJa2dHQUFTQlFpSElCZ0FFZ1VJaGlBWUFCSUZDSWdnR0FBU0J3aVhJQkFQR0FFU0J3aUZJQkFVR0FFWUFBIhEiC2pIUzRTaFZGakVZMAB4ASgUQhBjb21tZW50cy1zZWN0aW9u')
+
+
+
 
 
